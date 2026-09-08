@@ -366,7 +366,7 @@ function accessGranted() {
             "WAITING FOR GESTURE";
 
         status.textContent =
-            "Enter: OPEN → OK → PEACE";
+            "Enter Gesture Code";
 
     }, 2000);
 }
