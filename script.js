@@ -350,7 +350,7 @@ function accessGranted() {
     console.log("ACCESS GRANTED");
 
     accessStatus.textContent =
-        "ACCESS GRANTED";
+        "ACCESS GRANTED!!!";
 
     status.textContent =
         "Correct gesture sequence!";
