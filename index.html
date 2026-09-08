@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Hand Tracker</title>
+    <title>Hand Tracker 1.0</title>
 
     <link rel="stylesheet" href="./style.css">
 </head>
@@ -13,7 +14,7 @@
 
     <main class="app">
 
-        <h1>Hand Tracker</h1>
+        <h1>Hand Tracker 1.0</h1>
         <h2>By Mikhael Christo</h2>
 
         <p id="status">Loading...</p>
@@ -31,6 +32,8 @@
 
         </div>
 
+        <!-- INFO -->
+
         <div class="info">
 
             <div>
@@ -43,6 +46,27 @@
                 <strong id="cameraStatus">OFF</strong>
             </div>
 
+            <div>
+                <span>Gesture</span>
+                <strong id="gesture">NONE</strong>
+            </div>
+
+        </div>
+
+        <!-- ACCESS SYSTEM -->
+
+        <div class="access-panel">
+
+            <p>Gesture Password</p>
+
+            <h3 id="accessStatus">
+                WAITING FOR GESTURE
+            </h3>
+
+            <p>
+                🖐️ → 👌 → ✌️
+            </p>
+
         </div>
 
         <button id="startButton">
@@ -51,7 +75,11 @@
 
     </main>
 
-    <script type="module" src="./script.js"></script>
+    <script
+        type="module"
+        src="./script.js">
+    </script>
 
 </body>
+
 </html>
