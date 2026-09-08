@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Hand Tracker</title>
+
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+    <main class="app">
+
+        <h1>Hand Tracker</h1>
+
+        <p id="status">Loading...</p>
+
+        <div class="camera-container">
+
+            <video
+                id="video"
+                autoplay
+                muted
+                playsinline
+            ></video>
+
+            <canvas id="canvas"></canvas>
+
+        </div>
+
+        <div class="info">
+
+            <div>
+                <span>Hands</span>
+                <strong id="handCount">0</strong>
+            </div>
+
+            <div>
+                <span>Camera</span>
+                <strong id="cameraStatus">OFF</strong>
+            </div>
+
+        </div>
+
+        <button id="startButton">
+            Start Camera
+        </button>
+
+    </main>
+
+    <script type="module" src="./script.js"></script>
+
+</body>
+</html>
