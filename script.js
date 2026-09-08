@@ -20,22 +20,42 @@ const gestureDisplay = document.getElementById("gesture");
 const accessStatus = document.getElementById("accessStatus");
 
 // ===============================
-// MEDIAPIPE
+// CONFIG
 // ===============================
 
-let handLandmarker;
-let cameraStream;
-let lastVideoTime = -1;
-
-// ===============================
-// GESTURE PASSWORD
-// ===============================
+const DASHBOARD_PAGE = "./dashboard.html";
+const LOGIN_PAGE = "./index.html";
 
 const correctSequence = [
     "OPEN",
     "OK",
     "PEACE"
 ];
+
+// ===============================
+// LOGIN CHECK
+// ===============================
+
+// Kalau user sudah login,
+// jangan tampilkan halaman gesture login lagi.
+
+const isLoggedIn = localStorage.getItem("loggedIn");
+
+if (isLoggedIn === "true") {
+    window.location.href = DASHBOARD_PAGE;
+}
+
+// ===============================
+// MEDIAPIPE
+// ===============================
+
+let handLandmarker = null;
+let cameraStream = null;
+let lastVideoTime = -1;
+
+// ===============================
+// GESTURE PASSWORD
+// ===============================
 
 let currentSequence = [];
 
@@ -45,37 +65,56 @@ let lastRecordedGesture = null;
 // Gesture yang sedang terdeteksi
 let currentGesture = "NONE";
 
+// Mencegah login diproses berkali-kali
+let accessGrantedState = false;
+
 // ===============================
 // INITIALIZE MEDIAPIPE
 // ===============================
 
 async function createHandLandmarker() {
+
     try {
-        status.textContent = "Loading hand tracker...";
 
-        const vision = await FilesetResolver.forVisionTasks(
-            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
+        status.textContent =
+            "Loading hand tracker...";
+
+        const vision =
+            await FilesetResolver.forVisionTasks(
+                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
+            );
+
+        handLandmarker =
+            await HandLandmarker.createFromOptions(
+                vision,
+                {
+                    baseOptions: {
+                        modelAssetPath:
+                            "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
+                    },
+
+                    runningMode: "VIDEO",
+
+                    numHands: 2
+                }
+            );
+
+        status.textContent =
+            "Hand tracker ready";
+
+        console.log(
+            "MediaPipe initialized"
         );
-
-        handLandmarker = await HandLandmarker.createFromOptions(
-            vision,
-            {
-                baseOptions: {
-                    modelAssetPath:
-                        "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
-                },
-
-                runningMode: "VIDEO",
-
-                numHands: 2
-            }
-        );
-
-        status.textContent = "Hand tracker ready";
 
     } catch (error) {
-        console.error(error);
-        status.textContent = "Failed to load hand tracker";
+
+        console.error(
+            "MediaPipe error:",
+            error
+        );
+
+        status.textContent =
+            "Failed to load hand tracker";
     }
 }
 
@@ -84,40 +123,62 @@ async function createHandLandmarker() {
 // ===============================
 
 async function startCamera() {
+
     try {
-        cameraStatus.textContent = "Requesting camera...";
 
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: {
-                    ideal: 640
-                },
+        cameraStatus.textContent =
+            "Requesting camera...";
 
-                height: {
-                    ideal: 480
+        cameraStream =
+            await navigator.mediaDevices.getUserMedia(
+                {
+                    video: {
+                        width: {
+                            ideal: 640
+                        },
+
+                        height: {
+                            ideal: 480
+                        }
+                    },
+
+                    audio: false
                 }
-            },
+            );
 
-            audio: false
-        });
-
-        video.srcObject = cameraStream;
+        video.srcObject =
+            cameraStream;
 
         await video.play();
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width =
+            video.videoWidth;
 
-        cameraStatus.textContent = "Camera active";
-        status.textContent = "Tracking hands...";
+        canvas.height =
+            video.videoHeight;
 
-        requestAnimationFrame(detectHands);
+        cameraStatus.textContent =
+            "Camera active";
+
+        status.textContent =
+            "Tracking hands...";
+
+        requestAnimationFrame(
+            detectHands
+        );
 
     } catch (error) {
-        console.error(error);
 
-        cameraStatus.textContent = "Camera permission denied";
-        status.textContent = "Could not access camera";
+        console.error(
+            "Camera error:",
+            error
+        );
+
+        cameraStatus.textContent =
+            "Camera permission denied";
+
+        status.textContent =
+            "Could not access camera";
     }
 }
 
@@ -128,20 +189,32 @@ async function startCamera() {
 async function detectHands() {
 
     if (!handLandmarker) {
-        requestAnimationFrame(detectHands);
+
+        requestAnimationFrame(
+            detectHands
+        );
+
         return;
     }
 
-    if (video.readyState >= 2) {
+    if (
+        video.readyState >= 2 &&
+        !accessGrantedState
+    ) {
 
-        if (video.currentTime !== lastVideoTime) {
+        if (
+            video.currentTime !==
+            lastVideoTime
+        ) {
 
-            lastVideoTime = video.currentTime;
+            lastVideoTime =
+                video.currentTime;
 
-            const results = handLandmarker.detectForVideo(
-                video,
-                performance.now()
-            );
+            const results =
+                handLandmarker.detectForVideo(
+                    video,
+                    performance.now()
+                );
 
             drawHands(results);
 
@@ -153,28 +226,39 @@ async function detectHands() {
                 handCount.textContent =
                     results.landmarks.length;
 
-                // Kita gunakan tangan pertama
-                const landmarks = results.landmarks[0];
+                // Gunakan tangan pertama
+                const landmarks =
+                    results.landmarks[0];
 
-                currentGesture = detectGesture(landmarks);
+                currentGesture =
+                    detectGesture(
+                        landmarks
+                    );
 
                 gestureDisplay.textContent =
                     currentGesture;
 
-                handleGesture(currentGesture);
+                handleGesture(
+                    currentGesture
+                );
 
             } else {
 
-                handCount.textContent = "0";
+                handCount.textContent =
+                    "0";
 
-                currentGesture = "NONE";
+                currentGesture =
+                    "NONE";
 
-                gestureDisplay.textContent = "NONE";
+                gestureDisplay.textContent =
+                    "NONE";
             }
         }
     }
 
-    requestAnimationFrame(detectHands);
+    requestAnimationFrame(
+        detectHands
+    );
 }
 
 // ===============================
@@ -183,40 +267,65 @@ async function detectHands() {
 
 function detectGesture(landmarks) {
 
-    const thumbTip = landmarks[4];
-    const thumbIP = landmarks[3];
+    const thumbTip =
+        landmarks[4];
 
-    const indexTip = landmarks[8];
-    const indexPIP = landmarks[6];
+    const thumbIP =
+        landmarks[3];
 
-    const middleTip = landmarks[12];
-    const middlePIP = landmarks[10];
+    const indexTip =
+        landmarks[8];
 
-    const ringTip = landmarks[16];
-    const ringPIP = landmarks[14];
+    const indexPIP =
+        landmarks[6];
 
-    const pinkyTip = landmarks[20];
-    const pinkyPIP = landmarks[18];
+    const middleTip =
+        landmarks[12];
 
-    // -------------------------------
+    const middlePIP =
+        landmarks[10];
+
+    const ringTip =
+        landmarks[16];
+
+    const ringPIP =
+        landmarks[14];
+
+    const pinkyTip =
+        landmarks[20];
+
+    const pinkyPIP =
+        landmarks[18];
+
+    // ===============================
     // FINGERS
-    // -------------------------------
+    // ===============================
 
     const indexUp =
-        indexTip.y < indexPIP.y;
+        indexTip.y <
+        indexPIP.y;
 
     const middleUp =
-        middleTip.y < middlePIP.y;
+        middleTip.y <
+        middlePIP.y;
 
     const ringUp =
-        ringTip.y < ringPIP.y;
+        ringTip.y <
+        ringPIP.y;
 
     const pinkyUp =
-        pinkyTip.y < pinkyPIP.y;
+        pinkyTip.y <
+        pinkyPIP.y;
 
-    // Thumb menggunakan jarak horizontal
+    // ===============================
+    // THUMB
+    // ===============================
+
     const thumbOpen =
-        Math.abs(thumbTip.x - thumbIP.x) > 0.04;
+        Math.abs(
+            thumbTip.x -
+            thumbIP.x
+        ) > 0.04;
 
     // ===============================
     // OPEN HAND
@@ -229,6 +338,7 @@ function detectGesture(landmarks) {
         ringUp &&
         pinkyUp
     ) {
+
         return "OPEN";
     }
 
@@ -242,6 +352,7 @@ function detectGesture(landmarks) {
         !ringUp &&
         !pinkyUp
     ) {
+
         return "PEACE";
     }
 
@@ -250,7 +361,10 @@ function detectGesture(landmarks) {
     // ===============================
 
     const thumbIndexDistance =
-        distance(thumbTip, indexTip);
+        distance(
+            thumbTip,
+            indexTip
+        );
 
     const okCircle =
         thumbIndexDistance < 0.08;
@@ -261,6 +375,7 @@ function detectGesture(landmarks) {
         ringUp &&
         pinkyUp
     ) {
+
         return "OK";
     }
 
@@ -268,13 +383,21 @@ function detectGesture(landmarks) {
 }
 
 // ===============================
-// DISTANCE BETWEEN TWO LANDMARKS
+// DISTANCE
 // ===============================
 
-function distance(pointA, pointB) {
+function distance(
+    pointA,
+    pointB
+) {
 
-    const dx = pointA.x - pointB.x;
-    const dy = pointA.y - pointB.y;
+    const dx =
+        pointA.x -
+        pointB.x;
+
+    const dy =
+        pointA.y -
+        pointB.y;
 
     return Math.sqrt(
         dx * dx +
@@ -283,28 +406,41 @@ function distance(pointA, pointB) {
 }
 
 // ===============================
-// HANDLE GESTURE PASSWORD
+// HANDLE GESTURE
 // ===============================
 
-function handleGesture(gesture) {
+function handleGesture(
+    gesture
+) {
 
-    // Jangan melakukan apa-apa kalau tidak ada gesture
-    if (gesture === "NONE") {
+    // Tidak ada gesture
+    if (
+        gesture === "NONE"
+    ) {
         return;
     }
 
-    // Jangan memasukkan gesture
-    // yang sama berulang kali
-    if (gesture === lastRecordedGesture) {
+    // Gesture yang sama tidak dicatat
+    // dua kali berturut-turut
+    if (
+        gesture ===
+        lastRecordedGesture
+    ) {
         return;
     }
 
-    lastRecordedGesture = gesture;
+    lastRecordedGesture =
+        gesture;
 
-    console.log("Gesture detected:", gesture);
+    console.log(
+        "Gesture detected:",
+        gesture
+    );
 
-    // Tambahkan gesture ke sequence
-    currentSequence.push(gesture);
+    // Masukkan gesture
+    currentSequence.push(
+        gesture
+    );
 
     console.log(
         "Current sequence:",
@@ -312,7 +448,7 @@ function handleGesture(gesture) {
     );
 
     // ===============================
-    // CHECK CURRENT INPUT
+    // CHECK INPUT
     // ===============================
 
     const index =
@@ -347,7 +483,16 @@ function handleGesture(gesture) {
 
 function accessGranted() {
 
-    console.log("ACCESS GRANTED");
+    if (accessGrantedState) {
+        return;
+    }
+
+    accessGrantedState =
+        true;
+
+    console.log(
+        "ACCESS GRANTED"
+    );
 
     accessStatus.textContent =
         "ACCESS GRANTED!!!";
@@ -355,20 +500,31 @@ function accessGranted() {
     status.textContent =
         "Correct gesture sequence!";
 
-    // Reset setelah 2 detik
+    // ===============================
+    // SAVE LOGIN
+    // ===============================
+
+    localStorage.setItem(
+        "loggedIn",
+        "true"
+    );
+
+    // ===============================
+    // STOP CAMERA
+    // ===============================
+
+    stopCamera();
+
+    // ===============================
+    // REDIRECT
+    // ===============================
+
     setTimeout(() => {
 
-        currentSequence = [];
+        window.location.href =
+            DASHBOARD_PAGE;
 
-        lastRecordedGesture = null;
-
-        accessStatus.textContent =
-            "WAITING FOR GESTURE";
-
-        status.textContent =
-            "Enter Gesture Code";
-
-    }, 2000);
+    }, 1000);
 }
 
 // ===============================
@@ -377,7 +533,9 @@ function accessGranted() {
 
 function accessDenied() {
 
-    console.log("ACCESS DENIED");
+    console.log(
+        "ACCESS DENIED"
+    );
 
     accessStatus.textContent =
         "ACCESS DENIED";
@@ -385,12 +543,11 @@ function accessDenied() {
     status.textContent =
         "Wrong sequence!";
 
-    // Reset sequence
+    // Reset
     currentSequence = [];
 
-    // Biar gesture berikutnya
-    // bisa dianggap sebagai gesture baru
-    lastRecordedGesture = null;
+    lastRecordedGesture =
+        null;
 
     setTimeout(() => {
 
@@ -401,6 +558,30 @@ function accessDenied() {
             "Enter: OPEN → OK → PEACE";
 
     }, 1500);
+}
+
+// ===============================
+// STOP CAMERA
+// ===============================
+
+function stopCamera() {
+
+    if (!cameraStream) {
+        return;
+    }
+
+    cameraStream
+        .getTracks()
+        .forEach(track => {
+            track.stop();
+        });
+
+    cameraStream = null;
+
+    video.srcObject = null;
+
+    cameraStatus.textContent =
+        "Camera stopped";
 }
 
 // ===============================
@@ -424,13 +605,17 @@ function drawHands(results) {
     }
 
     for (
-        const landmarks of results.landmarks
+        const landmarks
+        of results.landmarks
     ) {
 
-        drawConnections(landmarks);
+        drawConnections(
+            landmarks
+        );
 
         for (
-            const landmark of landmarks
+            const landmark
+            of landmarks
         ) {
 
             const x =
@@ -460,7 +645,9 @@ function drawHands(results) {
 // DRAW CONNECTIONS
 // ===============================
 
-function drawConnections(landmarks) {
+function drawConnections(
+    landmarks
+) {
 
     const connections = [
 
@@ -534,7 +721,7 @@ function drawConnections(landmarks) {
 }
 
 // ===============================
-// BUTTON
+// START BUTTON
 // ===============================
 
 startButton.addEventListener(
@@ -542,6 +729,7 @@ startButton.addEventListener(
     async () => {
 
         if (!handLandmarker) {
+
             await createHandLandmarker();
         }
 
@@ -550,7 +738,7 @@ startButton.addEventListener(
 );
 
 // ===============================
-// START
+// INITIALIZE
 // ===============================
 
 createHandLandmarker();
