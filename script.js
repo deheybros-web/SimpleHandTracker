@@ -29,7 +29,8 @@ const LOGIN_PAGE = "./index.html";
 const correctSequence = [
     "OPEN",
     "OK",
-    "PEACE"
+    "ONE",
+    "THREE"
 ];
 
 // ===============================
@@ -343,17 +344,17 @@ function detectGesture(landmarks) {
     }
 
     // ===============================
-    // PEACE
+    // ONE FINGER
     // ===============================
 
     if (
         indexUp &&
-        middleUp &&
+        !middleUp &&
         !ringUp &&
         !pinkyUp
     ) {
 
-        return "PEACE";
+        return "ONE";
     }
 
     // ===============================
@@ -377,6 +378,21 @@ function detectGesture(landmarks) {
     ) {
 
         return "OK";
+    }
+
+    // ===============================
+    // THREE FINGER
+    // ===============================
+
+    if (
+        indexUp &&
+        middleUp &&
+        ringUp &&
+        !pinkyUp &&
+        !thumbOpen
+    ) {
+
+        return "THREE";
     }
 
     return "NONE";
@@ -555,7 +571,7 @@ function accessDenied() {
             "WAITING FOR GESTURE";
 
         status.textContent =
-            "Enter: OPEN → OK → PEACE";
+            "Waiting for gesture...";
 
     }, 1500);
 }
@@ -737,6 +753,11 @@ startButton.addEventListener(
     }
 );
 
+// ===============================
+// INITIALIZE
+// ===============================
+
+createHandLandmarker();
 // ===============================
 // INITIALIZE
 // ===============================
